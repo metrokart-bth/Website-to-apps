@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Website → App Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F0F2F8; min-height: 100vh; padding: 20px 16px; }
+
+  .container { max-width: 600px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 { font-size: 24px; font-weight: 800; color: #1A1A2E; }
+  .header p { color: #6B7280; font-size: 14px; margin-top: 4px; }
+
+  .card { background: #fff; border-radius: 18px; padding: 22px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+  label { display: block; font-weight: 600; font-size: 13px; color: #374151; margin-bottom: 6px; }
+
+  input[type="text"], input[type="url"] {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1.5px solid #E5E7EB; font-size: 15px; outline: none;
+    transition: border .2s; background: #FAFAFA;
+  }
+  input:focus { border-color: #6366F1; background: #fff; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 12px 20px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;
+    width: 100%;
+  }
+  .btn-primary { background: #6366F1; color: #fff; }
+  .btn-primary:hover { background: #4F46E5; }
+  .btn-primary:disabled { background: #C7D2FE; cursor: not-allowed; }
+  .btn-outline { background: #fff; color: #6B7280; border: 1.5px solid #E5E7EB; }
+  .btn-green { background: #22C55E; color: #fff; }
+  .btn-green:hover { background: #16A34A; }
+
+  .icon-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 10px;
+    border: 2px solid #E5E7EB; background: #fff;
+    font-size: 22px; cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn.selected { border-color: #6366F1; background: #EEF2FF; }
+
+  .platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .platform-btn {
+    padding: 16px; border-radius: 12px; border: 2px solid #E5E7EB;
+    background: #fff; cursor: pointer; text-align: center; transition: all .2s;
+  }
+  .platform-btn.selected-ios { border-color: #007AFF; background: #E8F2FF; }
+  .platform-btn.selected-android { border-color: #3DDC84; background: #E6F9EE; }
+  .platform-icon { font-size: 28px; }
+  .platform-name { font-size: 13px; font-weight: 600; margin-top: 4px; color: #374151; }
+  .platform-btn.selected-ios .platform-name { color: #007AFF; }
+  .platform-btn.selected-android .platform-name { color: #3DDC84; }
+
+  .progress-bar { background: #E5E7EB; border-radius: 999px; height: 10px; overflow: hidden; margin: 16px 0; }
+  .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6366F1, #8B5CF6); transition: width .2s; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .result-header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    border-radius: 14px; padding: 20px; color: #fff; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .result-icon { font-size: 44px; }
+  .result-info h2 { font-size: 20px; margin-bottom: 4px; }
+  .result-info p { font-size: 13px; opacity: .85; }
+  .badge { display: inline-block; background: rgba(255,255,255,.2); border-radius: 6px; padding: 2px 10px; font-size: 11px; margin: 4px 4px 0 0; }
+
+  .instruction-block { border-left: 3px solid; padding-left: 14px; margin-bottom: 14px; }
+  .instruction-block h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .instruction-block ol { padding-left: 18px; font-size: 13px; color: #4B5563; line-height: 2; }
+
+  .pwa-box {
+    background: linear-gradient(135deg, #EEF2FF, #F0FDF4);
+    border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 18px; margin-bottom: 16px;
+  }
+  .pwa-box h3 { font-size: 15px; color: #4338CA; margin-bottom: 10px; }
+
+  .phone-preview {
+    display: flex; flex-direction: column; align-items: center; margin: 20px 0;
+  }
+  .phone {
+    width: 180px; height: 340px; border-radius: 30px;
+    border: 8px solid #1A1A2E; background: #fff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    overflow: hidden; position: relative;
+  }
+  .phone-notch {
+    width: 60px; height: 16px; background: #1A1A2E;
+    border-radius: 0 0 12px 12px; margin: 0 auto;
+  }
+  .phone-screen {
+    padding: 8px; height: calc(100% - 16px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .phone-app-icon { font-size: 48px; margin-bottom: 8px; }
+  .phone-app-name { font-size: 12px; font-weight: 600; color: #1A1A2E; }
+  .phone-url { font-size: 9px; color: #9CA3AF; margin-top: 2px; word-break: break-all; }
+  .phone-label { font-size: 12px; color: #6B7280; margin-top: 8px; }
+
+  .download-section { margin-top: 16px; }
+  .download-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: #fff; border-radius: 12px;
+    border: 1.5px solid #E5E7EB; margin-bottom: 10px; cursor: pointer;
+    text-decoration: none; color: inherit; transition: all .2s;
+  }
+  .download-btn:hover { border-color: #6366F1; background: #FAFBFF; }
+  .download-left { display: flex; align-items: center; gap: 12px; }
+  .download-icon-box {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .download-title { font-size: 14px; font-weight: 600; color: #1A1A2E; }
+  .download-sub { font-size: 12px; color: #9CA3AF; }
+  .download-arrow { font-size: 18px; color: #6366F1; }
+
+  .success-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #DCFCE7; color: #16A34A; border-radius: 999px;
+    padding: 4px 14px; font-size: 13px; font-weight: 600;
+    margin: 12px auto; display: flex; justify-content: center;
+  }
+
+  .error { color: #EF4444; font-size: 12px; margin-top: 6px; }
+  .field { margin-bottom: 16px; }
+
+  @media (max-width: 400px) {
+    .platform-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📲 Website → App</h1>
+    <p>Koi bhi website ko iOS & Android app banao — instantly</p>
+  </div>
+
+  <!-- STEP 1: URL Input -->
+  <div class="step active" id="step1">
+    <div class="card">
+      <div class="field">
+        <label>🌐 Website URL</label>
+        <input type="url" id="urlInput" placeholder="https://example.com" autocomplete="off"/>
+        <div class="error" id="urlError"></div>
+      </div>
+      <button class="btn btn-primary" onclick="goToStep2()">Aage Bado →</button>
+    </div>
+    <div class="card" style="background:#FFF7ED; border:1.5px solid #FED7AA;">
+      <p style="font-size:13px; color:#92400E;">
+        💡 <strong>Kaise kaam karta hai?</strong><br>
+        Yeh tool ek <strong>PWA (Progressive Web App)</strong> banata hai — seedha phone ke home screen pe install hoti hai, bilkul real app jaisi. Koi Xcode, Android Studio ya coding nahi chahiye!
+      </p>
+    </div>
+  </div>
+
+  <!-- STEP 2: Configure -->
+  <div class="step" id="step2">
+    <div class="card">
+      <div class="field">
+        <label>App Ka Naam</label>
+        <input type="text" id="appName" placeholder="Meri App"/>
+      </div>
+      <div class="field">
+        <label>App Icon Chuno</label>
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+      <div class="field">
+        <label>Platform</label>
+        <div class="platform-grid">
+          <div class="platform-btn selected-ios" id="platIOS" onclick="togglePlatform('ios')">
+            <div class="platform-icon">🍎</div>
+            <div class="platform-name">iPhone (iOS)</div>
+          </div>
+          <div class="platform-btn selected-android" id="platAndroid" onclick="togglePlatform('android')">
+            <div class="platform-icon">🤖</div>
+            <div class="platform-name">Android</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button class="btn btn-outline" style="width:auto;padding:12px 20px;" onclick="goToStep(1)">← Wapas</button>
+        <button class="btn btn-primary" onclick="startGenerate()">🚀 App Banao</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Generating -->
+  <div class="step" id="step3">
+    <div class="card" style="text-align:center; padding:36px 24px;">
+      <div style="font-size:56px; margin-bottom:16px;" id="genEmoji">⚙️</div>
+      <h2 style="color:#1A1A2E; margin-bottom:8px;" id="genTitle">App Ban Raha Hai…</h2>
+      <p style="color:#6B7280; font-size:14px;" id="genSub">Files generate ho rahi hain</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <p style="color:#6366F1; font-weight:700;" id="progressText">0%</p>
+    </div>
+  </div>
+
+  <!-- STEP 4: Done -->
+  <div class="step" id="step4">
+    <div class="result-header" id="resultHeader"></div>
+
+    <!-- Phone Preview -->
+    <div class="card">
+      <div class="phone-preview">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-app-icon" id="previewIcon">🌐</div>
+            <div class="phone-app-name" id="previewName">My App</div>
+            <div class="phone-url" id="previewUrl">example.com</div>
+          </div>
+        </div>
+        <div class="phone-label">📱 Aisa dikhega phone pe</div>
+      </div>
+    </div>
+
+    <!-- PWA Install Instructions -->
+    <div class="pwa-box">
+      <h3>✅ Seedha Phone Pe Install Karo (No IDE!)</h3>
+      <div class="instruction-block" style="border-color:#007AFF;">
+        <h4 style="color:#007AFF;">🍎 iPhone pe kaise install karein</h4>
+        <ol>
+          <li>Safari mein downloaded <strong>index.html</strong> kholo</li>
+          <li>Neeche Share button (□↑) dabao</li>
+          <li>"Add to Home Screen" select karo</li>
+          <li><strong>Done!</strong> App home screen pe aa jayegi</li>
+        </ol>
+      </div>
+      <div class="instruction-block" style="border-color:#3DDC84; margin-bottom:0;">
+        <h4 style="color:#3DDC84;">🤖 Android pe kaise install karein</h4>
+        <ol>
+          <li>Chrome mein downloaded <strong>index.html</strong> kholo</li>
+          <li>Top-right ⋮ menu → "Add to Home screen"</li>
+          <li>Ya address bar mein install icon aayega</li>
+          <li><strong>Done!</strong> App install ho jayegi</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Downloads -->
+    <div class="card">
+      <h3 style="font-size:15px; margin-bottom:14px;">📥 Files Download Karo</h3>
+      <div id="downloadList"></div>
+    </div>
+
+    <button class="btn btn-outline" onclick="reset()" style="margin-top:4px;">🔄 Doosri Website Convert Karo</button>
+  </div>
+</div>
+
+<script>
+const ICONS = ["🌐","📱","🛍️","📰","🎵","🎨","💼","🏠","🍕","✈️","📚","🎮","💊","🏋️","🌿"];
+let selectedIcon = "🌐";
+let platforms = { ios: true, android: true };
+let appUrl = "", appName = "", generatedFiles = [];
+
+// Init icon grid
+window.onload = () => {
+  const grid = document.getElementById("iconGrid");
+  ICONS.forEach(ic => {
+    const btn = document.createElement("button");
+    btn.className = "icon-btn" + (ic === selectedIcon ? " selected" : "");
+    btn.textContent = ic;
+    btn.onclick = () => {
+      document.querySelectorAll(".icon-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedIcon = ic;
+    };
+    grid.appendChild(btn);
+  });
+};
+
+function goToStep(n) {
+  document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+  document.getElementById("step" + n).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+function normalizeUrl(u) {
+  u = u.trim();
+  if (u && !/^https?:\/\//i.test(u)) u = "https://" + u;
+  return u;
+}
+
+function goToStep2() {
+  const raw = document.getElementById("urlInput").value;
+  const u = normalizeUrl(raw);
+  const err = document.getElementById("urlError");
+  try { new URL(u); } catch { err.textContent = "Sahi URL daalo (jaise: example.com)"; return; }
+  err.textContent = "";
+  appUrl = u;
+  // Auto-fill app name
+  try {
+    const host = new URL(u).hostname.replace("www.","");
+    const name = host.split(".")[0].replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+    document.getElementById("appName").value = name;
+  } catch {}
+  goToStep(2);
+}
+
+function togglePlatform(p) {
+  const el = document.getElementById(p === "ios" ? "platIOS" : "platAndroid");
+  const both = platforms.ios && platforms.android;
+  if (!both) { platforms[p] = true; }
+  else { platforms[p] = !platforms[p]; if (!platforms.ios && !platforms.android) platforms[p] = true; }
+  el.className = "platform-btn" + (platforms[p] ? (p==="ios"?" selected-ios":" selected-android") : "");
+}
+
+function generatePWA(name, url, icon) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="${name}"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#6366F1"/>
+<title>${name}</title>
+<link rel="manifest" href="manifest.json"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; height:100vh; display:flex; flex-direction:column; }
+  #toolbar {
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(135deg,#6366F1,#8B5CF6);
+    padding:10px 14px; color:#fff; flex-shrink:0;
+  }
+  #toolbar .app-icon { font-size:22px; }
+  #toolbar .app-name { font-size:15px; font-weight:700; flex:1; }
+  .nav-btn {
+    background:rgba(255,255,255,.2); border:none; color:#fff;
+    border-radius:8px; padding:6px 10px; cursor:pointer; font-size:13px;
+  }
+  #webframe { flex:1; border:none; width:100%; }
+  #loading {
+    position:fixed; inset:0; background:linear-gradient(135deg,#6366F1,#8B5CF6);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#fff; z-index:999; transition:opacity .5s;
+  }
+  #loading .licon { font-size:72px; margin-bottom:16px; animation:pulse 1.5s infinite; }
+  #loading h2 { font-size:24px; font-weight:800; }
+  #loading p { font-size:14px; opacity:.8; margin-top:6px; }
+  #loading .spinner {
+    width:40px; height:40px; border:4px solid rgba(255,255,255,.3);
+    border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; margin-top:24px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="licon">${icon}</div>
+  <h2>${name}</h2>
+  <p>${new URL(url).hostname}</p>
+  <div class="spinner"></div>
+</div>
+
+<div id="toolbar">
+  <span class="app-icon">${icon}</span>
+  <span class="app-name">${name}</span>
+  <button class="nav-btn" onclick="document.getElementById('webframe').contentWindow.history.back()">◀</button>
+  <button class="nav-btn" onclick="document.getElementById('webframe').contentWindow.history.forward()">▶</button>
+  <button class="nav-btn" onclick="document.getElementById('webframe').src=document.getElementById('webframe').src">↺</button>
+</div>
+
+<iframe id="webframe" src="${url}"
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+  onload="document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').style.display='none',500)">
+</iframe>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+// Handle iframe load error
+document.getElementById('webframe').onerror = () => {
+  document.getElementById('loading').innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:48px">⚠️</div><h2 style="margin:16px 0 8px">Website Load Nahi Hui</h2><p style="opacity:.8">Kuch websites iframe mein block karti hain</p><br><a href="${url}" target="_blank" style="color:#fff;font-size:14px">Browser mein Kholo →</a></div>';
+};
+<\/script>
+</body>
+</html>`;
+}
+
+function generateManifest(name, url, icon) {
+  const domain = new URL(url).hostname;
+  return JSON.stringify({
+    name: name,
+    short_name: name,
+    description: name + " - " + domain,
+    start_url: "./index.html",
+    display: "standalone",
+    orientation: "portrait-primary",
+    background_color: "#6366F1",
+    theme_color: "#6366F1",
+    icons: [
+      { src: "https://www.google.com/s2/favicons?domain="+domain+"&sz=192", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: "https://www.google.com/s2/favicons?domain="+domain+"&sz=512", sizes: "512x512", type: "image/png" }
+    ]
+  }, null, 2);
+}
+
+function generateSW() {
+  return `const CACHE='app-v1';
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./', './index.html']))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+}
+
+function generateReadme(name, url) {
+  return `# ${name} - App Installation Guide
+
+Website: ${url}
+
+## iPhone / iPad (iOS) pe Install:
+1. Safari browser mein index.html file kholo
+2. Share button (box with arrow) tap karo
+3. "Add to Home Screen" select karo
+4. "Add" dabao — Done!
+
+## Android pe Install:
+1. Chrome mein index.html file kholo  
+2. 3-dot menu → "Add to Home screen"
+3. Ya address bar mein install icon tap karo
+4. "Install" dabao — Done!
+
+## Files:
+- index.html  → Main app file (yahi kholo)
+- manifest.json → App settings
+- sw.js → Offline support
+
+No coding needed! Seedha phone pe chalta hai.`;
+}
+
+function startGenerate() {
+  appName = document.getElementById("appName").value.trim() || "My App";
+  goToStep(3);
+
+  let p = 0;
+  const stages = [
+    { pct: 20, emoji: "📝", title: "HTML File Bana Raha Hai...", sub: "App screen taiyaar ho rahi hai" },
+    { pct: 45, emoji: "⚙️", title: "Settings Configure Ho Rahi Hain...", sub: "Manifest aur icons set ho rahe hain" },
+    { pct: 70, emoji: "📦", title: "PWA Package Ban Raha Hai...", sub: "Service worker add ho raha hai" },
+    { pct: 90, emoji: "✨", title: "Final Touch...", sub: "Files ready ho rahi hain" },
+    { pct: 100, emoji: "✅", title: "App Ready!", sub: "Ab download karo" },
+  ];
+  let si = 0;
+
+  const interval = setInterval(() => {
+    p += Math.random() * 12 + 4;
+    if (p >= 100) { p = 100; clearInterval(interval); showResult(); }
+    const stage = stages.find(s => p <= s.pct) || stages[stages.length-1];
+    if (si < stages.indexOf(stage)) {
+      si = stages.indexOf(stage);
+      document.getElementById("genEmoji").textContent = stage.emoji;
+      document.getElementById("genTitle").textContent = stage.title;
+      document.getElementById("genSub").textContent = stage.sub;
+    }
+    document.getElementById("progressFill").style.width = p + "%";
+    document.getElementById("progressText").textContent = Math.round(p) + "%";
+  }, 150);
+}
+
+function showResult() {
+  // Generate files
+  const pwaHtml = generatePWA(appName, appUrl, selectedIcon);
+  const manifest = generateManifest(appName, appUrl, selectedIcon);
+  const sw = generateSW();
+  const readme = generateReadme(appName, appUrl);
+
+  generatedFiles = [
+    { name: "index.html", content: pwaHtml, emoji: "📄", desc: "Main App File (Yahi Kholo)", color: "#6366F1" },
+    { name: "manifest.json", content: manifest, emoji: "⚙️", desc: "App Config & Icons", color: "#8B5CF6" },
+    { name: "sw.js", content: sw, emoji: "📡", desc: "Offline Support", color: "#3B82F6" },
+    { name: "README.txt", content: readme, emoji: "📖", desc: "Install Karne Ka Tarika", color: "#22C55E" },
+  ];
+
+  // Result header
+  const domain = new URL(appUrl).hostname;
+  document.getElementById("resultHeader").innerHTML = `
+    <div class="result-icon">${selectedIcon}</div>
+    <div class="result-info">
+      <h2>${appName}</h2>
+      <p>${domain}</p>
+      <div>
+        ${platforms.ios ? '<span class="badge">🍎 iOS</span>' : ''}
+        ${platforms.android ? '<span class="badge">🤖 Android</span>' : ''}
+        <span class="badge">📄 ${generatedFiles.length} files</span>
+      </div>
+    </div>
+  `;
+
+  // Phone preview
+  document.getElementById("previewIcon").textContent = selectedIcon;
+  document.getElementById("previewName").textContent = appName;
+  document.getElementById("previewUrl").textContent = domain;
+
+  // Downloads
+  const dl = document.getElementById("downloadList");
+  dl.innerHTML = "";
+  generatedFiles.forEach(f => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <div class="download-btn" onclick="downloadFile('${f.name}')">
+        <div class="download-left">
+          <div class="download-icon-box" style="background:${f.color}20">${f.emoji}</div>
+          <div>
+            <div class="download-title">${f.name}</div>
+            <div class="download-sub">${f.desc}</div>
+          </div>
+        </div>
+        <div class="download-arrow">⬇</div>
+      </div>`;
+    dl.appendChild(div);
+  });
+
+  // Add "Download All" button
+  const allBtn = document.createElement("button");
+  allBtn.className = "btn btn-green";
+  allBtn.style.marginTop = "8px";
+  allBtn.textContent = "⬇ Saari Files Download Karo";
+  allBtn.onclick = downloadAll;
+  dl.appendChild(allBtn);
+
+  goToStep(4);
+}
+
+function downloadFile(name) {
+  const file = generatedFiles.find(f => f.name === name);
+  if (!file) return;
+  const blob = new Blob([file.content], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+function downloadAll() {
+  generatedFiles.forEach((f, i) => setTimeout(() => downloadFile(f.name), i * 300));
+}
+
+function reset() {
+  document.getElementById("urlInput").value = "";
+  document.getElementById("appName").value = "";
+  document.getElementById("urlError").textContent = "";
+  selectedIcon = "🌐";
+  platforms = { ios: true, android: true };
+  document.getElementById("platIOS").className = "platform-btn selected-ios";
+  document.getElementById("platAndroid").className = "platform-btn selected-android";
+  document.querySelectorAll(".icon-btn").forEach((b,i) => {
+    b.classList.toggle("selected", ICONS[i] === "🌐");
+  });
+  goToStep(1);
+}
+</script>
+
+</body>
+</html>
